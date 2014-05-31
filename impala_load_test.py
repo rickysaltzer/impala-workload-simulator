@@ -6,7 +6,7 @@ from threading import Thread
 import time
 import random
 import signal
-
+from stats import get_stats_tables, print_stats
 from impala.dbapi import connect
 import tornado.ioloop
 import simplejson as json
@@ -34,6 +34,7 @@ class ImpalaQueryScheduler(Thread):
         self.__impala_hosts = impala_hosts
         self.__connection_pool = (host for host in self.__impala_hosts)
         self.__stats_port = stats_port
+        self.__start_time = datetime.datetime.now()
 
     def get_new_connection(self):
         # Use a generator to keep a revolving iteration of the impala hosts, guaranteeing even connection distribution
@@ -51,10 +52,6 @@ class ImpalaQueryScheduler(Thread):
         """
         Execute Impala query threads which run randomized queries
         """
-        # Start HTTP Stats Thread
-        self.__http_thread = HttpThread(self.__stats_port, stats_method=self.stats)
-        self.__http_thread.start()
-
         for _ in range(self.__num_threads):
             query_thread = ImpalaQuery(self.get_new_connection(), self.__queries)
             self.__impala_threads.append(query_thread)
@@ -62,6 +59,10 @@ class ImpalaQueryScheduler(Thread):
 
         for query_thread in self.__impala_threads:
             query_thread.start()
+
+        # Start HTTP Stats Thread
+        self.__http_thread = HttpThread(self.__stats_port, stats_method=self.stats)
+        self.__http_thread.start()
 
     def shutdown(self):
         """
@@ -93,10 +94,20 @@ class ImpalaQueryScheduler(Thread):
             stats[query_thread.name] = query_thread.stats()
         total_successful_queries = sum([i["successful"] for i in stats.values()])
         total_failed_queries = sum([i["failures"] for i in stats.values()])
-        average_query_time = sum([i["average_query_time"] for i in stats.values() if i["average_query_time"]])/ len(self.__impala_threads)
+        average_query_time = sum([i["average_query_time"] for i in stats.values() if i["average_query_time"]]) / len(
+            self.__impala_threads)
         stats["total_successful_queries"] = total_successful_queries
         stats["total_failed_queries"] = total_failed_queries
         stats["average_query_time"] = average_query_time
+
+        # basic estiamtion of the "queries per hour" metric
+        total_runtime = (datetime.datetime.now() - self.__start_time)
+        stats["total_runtime"] = str(total_runtime)
+        if total_successful_queries > 0:
+            stats["queries_per_hour"] = int(
+                (float(total_successful_queries) / float(total_runtime.seconds)) * (60.0 * 60.0))
+        else:
+            stats["queries_per_hour"] = 0
         return stats
 
 
@@ -116,6 +127,7 @@ class ImpalaQuery(Thread):
         self.__running = False
         self.__failed_queries = []
         self.__query_times = []
+        self.__running_query = False
 
     def random_query(self):
         return random.choice(self.__queries)
@@ -134,17 +146,14 @@ class ImpalaQuery(Thread):
                 self.__active_cursor = self.__connection.cursor()
                 self.__running_start_time = time.time()
                 self.__running_query = True
-                self.say("query #%d running" % num_queries)
                 self.__active_cursor.execute(query)
                 _ = self.__active_cursor.fetchall()
                 self.__active_cursor.close()
-                self.say("query #%d finished" % num_queries)
                 self.__running_query = False
                 self.__running_end_time = time.time()
                 self.__successful += 1
                 self.__query_times.append((self.__running_end_time - self.__running_start_time))
             except Exception as e:
-                self.say("query #%d failed" % num_queries)
                 self.__failures += 1
                 self.__failed_queries.append(
                     dict(query=query, exception=e.message, failed_time=datetime.datetime.now().strftime(DATE_FORMAT)))
@@ -218,7 +227,7 @@ if __name__ == "__main__":
 
     def signal_handler(signal, frame):
         global stats
-        stats = scheduler.stats()
+        stats = get_stats_tables()
         scheduler.shutdown()
         while not scheduler.finished:
             time.sleep(.10)
@@ -227,26 +236,5 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     signal.pause()
 
-    # Print the overall stats
-    total_successful_queries = sum(i["successful"] for i in stats.values())
-    total_failed_queries = sum(i["failures"] for i in stats.values())
-    total_threads = len(stats.values())
-    print(stats.values()[0]["average_query_time"])
-    average_query_time = sum(i["average_query_time"] for i in stats.values()) / total_threads
-    failed_queries = []
-    for i in stats.values():
-        for f in i["failed_queries"]:
-            failed_queries.append(f)
-
     print("\n\n")
-    print("=== Ending Stats ====")
-    print("Total Threads: %d" % total_threads)
-    print("Total Successful Queries: %d" % total_successful_queries)
-    print("Total Failed Queries: %d" % total_failed_queries)
-    print("Average Query Time: %f seconds" % average_query_time)
-    if failed_queries:
-        print("\n\nFailed Queries:")
-        for f in failed_queries:
-            print("== Time==\n%s" % f["failed_time"])
-            print("== Query ==\n%s" % f["query"])
-            print("== Exception ==\n%s" % f["exception"])
+    print_stats(stats)

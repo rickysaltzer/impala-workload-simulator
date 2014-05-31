@@ -24,18 +24,28 @@ class ImpalaQueryScheduler(Thread):
     Thread responsible for launching and monitoring ImpalaQuery threads
     """
 
-    def __init__(self, queries, num_threads, impala_host, stats_port):
+    def __init__(self, queries, num_threads, impala_hosts, stats_port):
         # Define the number of threads to launch
         Thread.__init__(self)
         self.__num_threads = num_threads
         self.__queries = queries
         self.__finished = False
         self.__impala_threads = []
-        self.__impala_host = impala_host
+        self.__impala_hosts = impala_hosts
+        self.__connection_pool = (host for host in self.__impala_hosts)
         self.__stats_port = stats_port
 
     def get_new_connection(self):
-        return connect(host=self.__impala_host, port=21050)
+        # Use a generator to keep a revolving iteration of the impala hosts, guaranteeing even connection distribution
+        try:
+            impala_host = self.__connection_pool.next()
+        except StopIteration:
+            # This means we've reached the end of the Python generator, let's reset it
+            self.__connection_pool = (host for host in self.__impala_hosts)
+            impala_host = self.__connection_pool.next()
+        connection = connect(host=impala_host, port=21050)
+        connection.host = impala_host  # Slap the hostname inside the connection object
+        return connection
 
     def run(self):
         """
@@ -83,7 +93,7 @@ class ImpalaQueryScheduler(Thread):
             stats[query_thread.name] = query_thread.stats()
         total_successful_queries = sum([i["successful"] for i in stats.values()])
         total_failed_queries = sum([i["failures"] for i in stats.values()])
-        average_query_time = sum(i["average_query_time"] for i in stats.values()) / len(self.__impala_threads)
+        average_query_time = sum([i["average_query_time"] for i in stats.values() if i["average_query_time"]])/ len(self.__impala_threads)
         stats["total_successful_queries"] = total_successful_queries
         stats["total_failed_queries"] = total_failed_queries
         stats["average_query_time"] = average_query_time
@@ -155,9 +165,9 @@ class ImpalaQuery(Thread):
 
     def stats(self):
         stats = dict(failures=self.__failures, successful=self.__successful,
-                    start_time=self.__start_time.strftime(DATE_FORMAT), running=self.__running,
-                    failed_queries=self.__failed_queries,
-                    average_query_time=self.average_run_time)
+                     start_time=self.__start_time.strftime(DATE_FORMAT), running=self.__running,
+                     failed_queries=self.__failed_queries,
+                     average_query_time=self.average_run_time, impala_host=self.__connection.host)
         # See if we have an active query, if so, find out how long it's been running
         if self.__running_query:
             stats["currently_running_query_time"] = time.time() - self.__running_start_time
@@ -195,13 +205,13 @@ if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description="Simple Impala workload simulator.")
     argparser.add_argument("--query_file", metavar="f", type=str, required=True)
     argparser.add_argument("--threads", metavar="t", type=int, required=True)
-    argparser.add_argument("--impala_host", metavar="h", type=str, required=True)
+    argparser.add_argument("--impala_hosts", metavar="h", type=str, required=True)
     argparser.add_argument("--stats_port", metavar="p", type=str, default=8888)
     args = argparser.parse_args()
     queries_file = open(args.query_file, "r")
     queries = queries_file.read().replace("\n", "").split(";")
     queries.pop(-1)  # remove trailing empty element
-    scheduler = ImpalaQueryScheduler(queries, args.threads, args.impala_host, args.stats_port)
+    scheduler = ImpalaQueryScheduler(queries, args.threads, args.impala_hosts.split(","), args.stats_port)
 
     # Keep an empty place holder for the final stats
     stats = None

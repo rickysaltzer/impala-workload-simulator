@@ -12,7 +12,8 @@ def get_stats_tables():
          data["queries_per_hour"]])
 
     individual_table = PrettyTable(
-        ["Thread", "Impala Host", "Total Success", "Total Failures", "Average Time", "Running Query Time"])
+        ["Thread", "Impala Host", "Total Success", "Total Failures", "Average Time", "Running Query Time",
+         "Estimated Queries Per Hour"])
     for i in data.keys():
         if i.startswith("Thread"):
             running_query_time = ""
@@ -20,7 +21,7 @@ def get_stats_tables():
                 running_query_time = data[i]["currently_running_query_time"]
             individual_table.add_row(
                 [i, data[i]["impala_host"], data[i]["successful"], data[i]["failures"], data[i]["average_query_time"],
-                 running_query_time])
+                 running_query_time, data[i]["queries_per_hour"]])
 
     return {"global": global_table, "individual": individual_table}
 
@@ -31,6 +32,7 @@ def print_stats(stats):
     print("\n\n")
     print("=" * 10 + " Individual Stats" + "=" * 10)
     print(stats["individual"])
+
 
 if __name__ == "__main__":
     print_stats(get_stats_tables())

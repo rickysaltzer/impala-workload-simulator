@@ -44,9 +44,16 @@ class ImpalaQueryScheduler(Thread):
             # This means we've reached the end of the Python generator, let's reset it
             self.__connection_pool = (host for host in self.__impala_hosts)
             impala_host = self.__connection_pool.next()
-        connection = connect(host=impala_host, port=21050)
-        connection.host = impala_host  # Slap the hostname inside the connection object
-        return connection
+
+        def connection_callback():
+            """
+            Returns Impala connection when executed, used to speed up thread startup times.
+            """
+            connection = connect(host=impala_host, port=21050)
+            connection.host = impala_host  # Slap the hostname inside the connection object
+            return connection
+
+        return connection_callback
 
     def run(self):
         """
@@ -118,7 +125,7 @@ class ImpalaQuery(Thread):
         execute a random query against Impala.
         """
         Thread.__init__(self)
-        self.__connection = connection
+        self.__connection = connection()    # This is a connection callback, established here
         self.__queries = queries
         self.__shutdown = False
         self.__failures = 0
@@ -183,6 +190,13 @@ class ImpalaQuery(Thread):
             stats["currently_running_query"] = True
         else:
             stats["currently_running_query"] = False
+        total_runtime = (datetime.datetime.now() - self.__start_time)
+        stats["total_runtime"] = str(total_runtime)
+        if self.__successful > 0:
+            stats["queries_per_hour"] = int(
+                (float(self.__successful) / float(total_runtime.seconds)) * (60.0 * 60.0))
+        else:
+            stats["queries_per_hour"] = 0
         return stats
 
 

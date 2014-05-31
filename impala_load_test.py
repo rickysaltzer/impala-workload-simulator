@@ -162,6 +162,8 @@ class ImpalaQuery(Thread):
         if self.__running_query:
             stats["currently_running_query_time"] = time.time() - self.__running_start_time
             stats["currently_running_query"] = True
+        else:
+            stats["currently_running_query"] = False
         return stats
 
 

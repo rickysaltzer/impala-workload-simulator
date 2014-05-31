@@ -51,41 +51,42 @@ You can also run the stats.py script which prints the current stats from HTTP to
 
 
     $ python stats.py
-    ==========Overall Stats==========
-    +---------------+----------------+----------------+
-    | Total Success | Total Failures |  Average Time  |
-    +---------------+----------------+----------------+
-    |      560      |       0        | 0.858408534574 |
-    +---------------+----------------+----------------+
+    ========== Global Stats ==========
+    +---------------+----------------+--------------------+----------------+----------------------------+
+    | Total Success | Total Failures | Average Query Time | Total Runtime  | Estimated Queries Per Hour |
+    +---------------+----------------+--------------------+----------------+----------------------------+
+    |      1743     |       0        |   1.02163942459    | 0:02:21.109358 |           44502            |
+    +---------------+----------------+--------------------+----------------+----------------------------+
 
 
-    ==========Individual Stats==========
+
+    ========== Individual Stats==========
     +-----------+----------------------------+---------------+----------------+----------------+--------------------+
     |   Thread  |        Impala Host         | Total Success | Total Failures |  Average Time  | Running Query Time |
     +-----------+----------------------------+---------------+----------------+----------------+--------------------+
-    | Thread-19 | cottoop07.mtv.cloudera.com |       23      |       0        | 0.851490445759 |                    |
-    | Thread-18 | cottoop06.mtv.cloudera.com |       22      |       0        | 0.866624507037 |   0.545561075211   |
-    | Thread-13 | cottoop01.mtv.cloudera.com |       23      |       0        | 0.844035656556 |                    |
-    | Thread-12 | cottoop10.mtv.cloudera.com |       22      |       0        | 0.856634811922 |   0.842869997025   |
-    | Thread-11 | cottoop09.mtv.cloudera.com |       22      |       0        | 0.871873714707 |   0.418411016464   |
-    | Thread-10 | cottoop08.mtv.cloudera.com |       22      |       0        | 0.864315520633 |   0.579195022583   |
-    | Thread-17 | cottoop05.mtv.cloudera.com |       23      |       0        | 0.854346130205 |                    |
-    | Thread-16 | cottoop04.mtv.cloudera.com |       22      |       0        | 0.869141762907 |   0.53549695015    |
-    | Thread-15 | cottoop03.mtv.cloudera.com |       23      |       0        | 0.853340097096 |                    |
-    | Thread-14 | cottoop02.mtv.cloudera.com |       22      |       0        | 0.869811794975 |   0.471101999283   |
-    |  Thread-9 | cottoop07.mtv.cloudera.com |       22      |       0        | 0.857216444882 |   0.729597091675   |
-    |  Thread-8 | cottoop06.mtv.cloudera.com |       22      |       0        | 0.867344639518 |   0.541918039322   |
-    |  Thread-7 | cottoop05.mtv.cloudera.com |       23      |       0        | 0.853373413501 |                    |
-    |  Thread-6 | cottoop04.mtv.cloudera.com |       23      |       0        | 0.851857931718 |                    |
-    |  Thread-5 | cottoop03.mtv.cloudera.com |       22      |       0        | 0.86438723044  |   0.582756996155   |
-    |  Thread-4 | cottoop02.mtv.cloudera.com |       22      |       0        | 0.873402758078 |   0.257457017899   |
-    |  Thread-3 | cottoop01.mtv.cloudera.com |       23      |       0        | 0.844295304755 |                    |
-    | Thread-26 | cottoop04.mtv.cloudera.com |       22      |       0        | 0.85479426384  |   0.729365825653   |
-    | Thread-27 | cottoop05.mtv.cloudera.com |       23      |       0        | 0.840302270392 |                    |
-    | Thread-24 | cottoop02.mtv.cloudera.com |       22      |       0        | 0.873652143912 |   0.230617046356   |
-    | Thread-25 | cottoop03.mtv.cloudera.com |       23      |       0        | 0.852507166241 |                    |
-    | Thread-22 | cottoop10.mtv.cloudera.com |       22      |       0        | 0.856391516599 |   0.777354001999   |
-    | Thread-23 | cottoop01.mtv.cloudera.com |       23      |       0        | 0.845959922542 |                    |
-    | Thread-20 | cottoop08.mtv.cloudera.com |       22      |       0        | 0.863940336488 |   0.581480979919   |
-    | Thread-21 | cottoop09.mtv.cloudera.com |       22      |       0        | 0.859173579649 |   0.645567178726   |
+    | Thread-19 | cottoop08.mtv.cloudera.com |       71      |       0        | 0.97440288772  |   0.726090908051   |
+    | Thread-18 | cottoop07.mtv.cloudera.com |       72      |       0        | 0.95951459474  |                    |
+    | Thread-13 | cottoop02.mtv.cloudera.com |       66      |       0        | 1.12178278692  |   0.893409013748   |
+    | Thread-12 | cottoop01.mtv.cloudera.com |       69      |       0        | 1.05488447867  |                    |
+    | Thread-11 | cottoop10.mtv.cloudera.com |       72      |       0        | 0.957974814706 |                    |
+    | Thread-10 | cottoop09.mtv.cloudera.com |       72      |       0        | 0.957079198625 |                    |
+    | Thread-17 | cottoop06.mtv.cloudera.com |       71      |       0        | 0.984555711209 |  0.00124502182007  |
+    | Thread-16 | cottoop05.mtv.cloudera.com |       68      |       0        | 1.07797095004  |                    |
+    | Thread-15 | cottoop04.mtv.cloudera.com |       68      |       0        | 1.05532084844  |   1.15838599205    |
+    | Thread-14 | cottoop03.mtv.cloudera.com |       70      |       0        | 1.02727906023  |                    |
+    |  Thread-9 | cottoop08.mtv.cloudera.com |       72      |       0        | 0.958285106553 |                    |
+    |  Thread-8 | cottoop07.mtv.cloudera.com |       72      |       0        | 0.948704643382 |   0.62193608284    |
+    |  Thread-7 | cottoop06.mtv.cloudera.com |       72      |       0        | 0.96268357171  |                    |
+    |  Thread-6 | cottoop05.mtv.cloudera.com |       69      |       0        | 1.05619531438  |                    |
+    |  Thread-5 | cottoop04.mtv.cloudera.com |       68      |       0        | 1.07776907612  |                    |
+    |  Thread-4 | cottoop03.mtv.cloudera.com |       68      |       0        |  1.0786908304  |                    |
+    |  Thread-3 | cottoop02.mtv.cloudera.com |       69      |       0        | 1.04992320572  |                    |
+    |  Thread-2 | cottoop01.mtv.cloudera.com |       68      |       0        | 1.06266536432  |   0.683424949646   |
+    | Thread-26 | cottoop05.mtv.cloudera.com |       70      |       0        | 1.00484127998  |   0.559206962585   |
+    | Thread-24 | cottoop03.mtv.cloudera.com |       70      |       0        | 1.00543683938  |   0.520417928696   |
+    | Thread-25 | cottoop04.mtv.cloudera.com |       68      |       0        | 1.06849292797  |  0.0797538757324   |
+    | Thread-22 | cottoop01.mtv.cloudera.com |       68      |       0        | 1.07748266879  |                    |
+    | Thread-23 | cottoop02.mtv.cloudera.com |       68      |       0        | 1.07346872722  |                    |
+    | Thread-20 | cottoop09.mtv.cloudera.com |       71      |       0        | 0.97144339454  |   0.930362939835   |
+    | Thread-21 | cottoop10.mtv.cloudera.com |       71      |       0        | 0.974137333077 |   0.734420061111   |
     +-----------+----------------------------+---------------+----------------+----------------+--------------------+

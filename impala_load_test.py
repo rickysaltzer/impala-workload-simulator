@@ -81,6 +81,12 @@ class ImpalaQueryScheduler(Thread):
         stats = {}
         for query_thread in self.__impala_threads:
             stats[query_thread.name] = query_thread.stats()
+        total_successful_queries = sum([i["successful"] for i in stats.values()])
+        total_failed_queries = sum([i["failures"] for i in stats.values()])
+        average_query_time = sum(i["average_query_time"] for i in stats.values()) / len(self.__impala_threads)
+        stats["total_successful_queries"] = total_successful_queries
+        stats["total_failed_queries"] = total_failed_queries
+        stats["average_query_time"] = average_query_time
         return stats
 
 

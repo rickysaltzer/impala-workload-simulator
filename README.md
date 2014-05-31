@@ -4,9 +4,8 @@
 
 1. Impyla (http://github.com/cloudera/impyla <-- install manually)
 2. Tornado
-
-
-    pip install tornado
+3. Requests
+4. Prettytable
 
 ## Instructions
 1. Create a file containing queries that you want executed at random

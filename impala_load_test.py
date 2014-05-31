@@ -15,7 +15,7 @@ import tornado.web
 # Date Format
 DATE_FORMAT = "%m-%d-%Y %H:%M:%S"
 
-# Time in-between connections
+# Time in-between queries
 TIME_BETWEEN_QUERIES = 1  # Seconds
 
 

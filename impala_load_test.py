@@ -253,7 +253,7 @@ if __name__ == "__main__":
     argparser.add_argument("--query_file", metavar="f", type=str, required=True)
     argparser.add_argument("--threads", metavar="t", type=int, required=True)
     argparser.add_argument("--impala_hosts", metavar="h", type=str, required=True)
-    argparser.add_argument("--stats_port", metavar="p", type=str, default=8888)
+    argparser.add_argument("--stats_port", metavar="p", type=int, default=8888)
     argparser.add_argument("--kerberos", metavar="k", type=bool, default=False)
     argparser.add_argument("--kerberos_service", type=str, default="impala")
     args = argparser.parse_args()

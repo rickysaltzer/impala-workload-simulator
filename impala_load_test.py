@@ -7,13 +7,16 @@ import time
 import random
 import signal
 import sys
+import socket
+
 from impala.dbapi import connect
+from impala.rpc import TTransportException
 import tornado.ioloop
 import simplejson as json
-import socket
 import tornado.web
 
 from stats import get_stats_tables, print_stats
+
 
 
 # Date Format
@@ -55,10 +58,13 @@ class ImpalaQueryScheduler(Thread):
             """
             Returns Impala connection when executed, used to speed up thread startup times.
             """
-            connection = connect(host=impala_host, port=21050, use_kerberos=self.__kerberos,
-                                 kerberos_service_name=self.__kerberos_service)
-            connection.host = impala_host  # Slap the hostname inside the connection object
-            return connection
+            try:
+                connection = connect(host=impala_host, port=21050, use_kerberos=self.__kerberos,
+                                     kerberos_service_name=self.__kerberos_service)
+                connection.host = impala_host  # Slap the hostname inside the connection object
+                return connection
+            except TTransportException:
+                raise NameError("Error connecting to Impala daemon [%s]" % impala_host)
 
         return connection_callback
 
@@ -132,7 +138,6 @@ class ImpalaQuery(Thread):
         execute a random query against Impala.
         """
         Thread.__init__(self)
-        self.__connection = connection()    # This is a connection callback, established here
         self.__queries = queries
         self.__shutdown = False
         self.__failures = 0
@@ -142,6 +147,13 @@ class ImpalaQuery(Thread):
         self.__failed_queries = []
         self.__query_times = []
         self.__running_query = False
+
+        try:
+            self.__connection = connection()    # This is a connection callback, established here
+        except NameError as e:
+            self.say(e.message)
+            self.__connection = None
+            self.__shutdown = True
 
     def random_query(self):
         return random.choice(self.__queries)
@@ -177,7 +189,8 @@ class ImpalaQuery(Thread):
 
     def shutdown(self):
         self.say("closing impala connection")
-        self.__connection.close()
+        if self.__connection:
+            self.__connection.close()
         self.__shutdown = True
         self.say("closed impala connection")
 
@@ -190,7 +203,11 @@ class ImpalaQuery(Thread):
         stats = dict(failures=self.__failures, successful=self.__successful,
                      start_time=self.__start_time.strftime(DATE_FORMAT), running=self.__running,
                      failed_queries=self.__failed_queries,
-                     average_query_time=self.average_run_time, impala_host=self.__connection.host)
+                     average_query_time=self.average_run_time)
+        if self.__connection:
+            stats["impala_host"] = self.__connection.host
+        else:
+            stats["impala_host"] = "Not Connected"
         # See if we have an active query, if so, find out how long it's been running
         if self.__running_query:
             stats["currently_running_query_time"] = time.time() - self.__running_start_time

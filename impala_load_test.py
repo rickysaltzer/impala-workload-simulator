@@ -276,7 +276,7 @@ if __name__ == "__main__":
 
     def signal_handler(signal, frame):
         global stats
-        stats = get_stats_tables()
+        stats = get_stats_tables(url="http://localhost:%d" % args.stats_port)
         scheduler.shutdown()
         while not scheduler.finished:
             time.sleep(.10)

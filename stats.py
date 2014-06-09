@@ -4,7 +4,18 @@ import sys
 
 
 def get_stats_tables(url=None):
-    data = requests.get(url or "http://localhost:8888").json()
+    url = url or "http://localhost:8888"
+    try:
+        request = requests.get(url)
+        if not request.ok:
+            raise requests.ConnectionError
+        data = request.json()
+    except requests.ConnectionError:
+        print("Error connecting to stats URL: %s" % url)
+        sys.exit(1)
+    except TypeError:
+        print("Error decoding JSON at stats URL: %s" % url)
+        sys.exit(1)
     global_table = PrettyTable(
         ["Total Success", "Total Failures", "Average Query Time", "Total Runtime", "Estimated Queries Per Hour"])
     global_table.add_row(

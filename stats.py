@@ -1,9 +1,10 @@
 import requests
 from prettytable import PrettyTable
+import sys
 
 
-def get_stats_tables():
-    data = requests.get("http://localhost:8888").json()
+def get_stats_tables(url=None):
+    data = requests.get(url or "http://localhost:8888").json()
     global_table = PrettyTable(
         ["Total Success", "Total Failures", "Average Query Time", "Total Runtime", "Estimated Queries Per Hour"])
     global_table.add_row(
@@ -35,4 +36,10 @@ def print_stats(stats):
 
 
 if __name__ == "__main__":
-    print_stats(get_stats_tables())
+    url = None
+    if len(sys.argv) > 1:
+        if sys.argv[1].startswith("http"):
+            url = sys.argv[1]
+        else:
+            url = "http://" + sys.argv[1]
+    print_stats(get_stats_tables(url=url))

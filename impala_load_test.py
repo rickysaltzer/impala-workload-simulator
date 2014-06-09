@@ -12,7 +12,10 @@ import socket
 from impala.dbapi import connect
 from impala.rpc import TTransportException
 import tornado.ioloop
-import simplejson as json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 import tornado.web
 
 from stats import get_stats_tables, print_stats

@@ -183,6 +183,7 @@ class ImpalaQuery(Thread):
                 self.__successful += 1
                 self.__query_times.append((self.__running_end_time - self.__running_start_time))
             except Exception as e:
+                self.say("QUERY EXCEPTION: [%s]" % e.message)
                 self.__failures += 1
                 self.__failed_queries.append(
                     dict(query=query, exception=e.message, failed_time=datetime.datetime.now().strftime(DATE_FORMAT)))

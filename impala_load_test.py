@@ -6,11 +6,14 @@ from threading import Thread
 import time
 import random
 import signal
-from stats import get_stats_tables, print_stats
+import sys
 from impala.dbapi import connect
 import tornado.ioloop
 import simplejson as json
 import tornado.web
+
+from stats import get_stats_tables, print_stats
+
 
 # Date Format
 DATE_FORMAT = "%m-%d-%Y %H:%M:%S"
@@ -24,7 +27,7 @@ class ImpalaQueryScheduler(Thread):
     Thread responsible for launching and monitoring ImpalaQuery threads
     """
 
-    def __init__(self, queries, num_threads, impala_hosts, stats_port):
+    def __init__(self, queries, num_threads, impala_hosts, stats_port, kerberos=False, kerberos_service="impala"):
         # Define the number of threads to launch
         Thread.__init__(self)
         self.__num_threads = num_threads
@@ -35,6 +38,8 @@ class ImpalaQueryScheduler(Thread):
         self.__connection_pool = (host for host in self.__impala_hosts)
         self.__stats_port = stats_port
         self.__start_time = datetime.datetime.now()
+        self.__kerberos = kerberos
+        self.__kerberos_service = kerberos_service
 
     def get_new_connection(self):
         # Use a generator to keep a revolving iteration of the impala hosts, guaranteeing even connection distribution
@@ -49,7 +54,8 @@ class ImpalaQueryScheduler(Thread):
             """
             Returns Impala connection when executed, used to speed up thread startup times.
             """
-            connection = connect(host=impala_host, port=21050)
+            connection = connect(host=impala_host, port=21050, use_kerberos=self.__kerberos,
+                                 kerberos_service_name=self.__kerberos_service)
             connection.host = impala_host  # Slap the hostname inside the connection object
             return connection
 
@@ -230,11 +236,22 @@ if __name__ == "__main__":
     argparser.add_argument("--threads", metavar="t", type=int, required=True)
     argparser.add_argument("--impala_hosts", metavar="h", type=str, required=True)
     argparser.add_argument("--stats_port", metavar="p", type=str, default=8888)
+    argparser.add_argument("--kerberos", metavar="k", type=bool, default=False)
+    argparser.add_argument("--kerberos_service", type=str, default="impala")
     args = argparser.parse_args()
     queries_file = open(args.query_file, "r")
     queries = queries_file.read().replace("\n", "").split(";")
     queries.pop(-1)  # remove trailing empty element
-    scheduler = ImpalaQueryScheduler(queries, args.threads, args.impala_hosts.split(","), args.stats_port)
+
+    # If kerberos is enabled, make sure we have the sasl library
+    if args.kerberos:
+        try:
+            import sasl
+        except ImportError:
+            print("You need the sasl library in order to use kerberos")
+            sys.exit(1)
+    scheduler = ImpalaQueryScheduler(queries, args.threads, args.impala_hosts.split(","), args.stats_port,
+                                     args.kerberos, args.kerberos_service)
 
     # Keep an empty place holder for the final stats
     stats = None

@@ -10,6 +10,7 @@ import sys
 from impala.dbapi import connect
 import tornado.ioloop
 import simplejson as json
+import socket
 import tornado.web
 
 from stats import get_stats_tables, print_stats
@@ -215,7 +216,8 @@ class HttpThread(Thread):
     def run(self):
         stats_http = tornado.web.Application([(r"/", self.StatsHttpHandler, dict(stats_method=self.__stats_method))])
         stats_http.listen(self.__port)
-        print("Stats HTTP handler listening => http://localhost:%d" % self.__port)
+        ip_address = socket.getaddrinfo(socket.gethostname(), self.__port)[-1][-1][0]
+        print("Stats HTTP handler listening => http://%s:%d/" % (ip_address, self.__port))
         tornado.ioloop.IOLoop.instance().start()
 
     def shutdown(self):
